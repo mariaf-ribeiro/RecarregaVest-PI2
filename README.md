@@ -35,6 +35,6 @@ O RecarregaVest oferece recursos de organização, informação e acolhimento em
 
 ---
 
-*RecarregaVest — Cuidar de quem está se preparando para o futuro.* 🦊💙
+
 
 *RecarregaVest — Cuidar de quem está se preparando para o futuro.* 🦊💙
