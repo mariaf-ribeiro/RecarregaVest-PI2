@@ -1,0 +1,266 @@
+-- =====================================================================
+-- RecarregaVest - Esquema Fisico (DDL)
+-- =====================================================================
+DROP DATABASE IF EXISTS recarregavest_db;
+CREATE DATABASE recarregavest_db 
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_0900_ai_ci;
+USE recarregavest_db;
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- ---------------------------------------------------------------------
+-- USUARIO (superclasse)
+-- ---------------------------------------------------------------------
+CREATE TABLE usuario (
+    id_usuario INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    email VARCHAR(150) NOT NULL,
+    nome VARCHAR(150) NOT NULL,
+    senha VARCHAR(255) NOT NULL COMMENT 'Hash da senha (nunca texto puro) - RNF05',
+    foto_perfil VARCHAR(255) NULL,
+    tipo_perfil ENUM('vestibulando','psicologo','administrador') NOT NULL,
+    PRIMARY KEY (id_usuario),
+    CONSTRAINT uk_usuario_email UNIQUE (email),
+    CONSTRAINT ck_usuario_email CHECK (email LIKE '%_@_%._%')
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- SUBCLASSES 
+-- ---------------------------------------------------------------------
+CREATE TABLE vestibulando (
+    fk_id_usuario INT UNSIGNED NOT NULL,
+    curso_pretendido VARCHAR(100) NULL,
+    PRIMARY KEY (fk_id_usuario),
+    CONSTRAINT fk_vestibulando_usuario FOREIGN KEY (fk_id_usuario)
+    REFERENCES usuario (id_usuario) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE psicologo (
+    fk_id_usuario INT UNSIGNED NOT NULL,
+    crp VARCHAR(20) NOT NULL,
+    status_validacao ENUM('pendente','validado','rejeitado') NOT NULL DEFAULT 'pendente', 
+    PRIMARY KEY (fk_id_usuario),
+    CONSTRAINT uk_psicologo_crp UNIQUE (crp),
+    CONSTRAINT fk_psicologo_usuario FOREIGN KEY (fk_id_usuario)
+    REFERENCES usuario (id_usuario) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_psicologo_status ON psicologo (status_validacao); 
+
+CREATE TABLE administrador (
+    fk_id_usuario INT UNSIGNED NOT NULL,
+    credenciamento VARCHAR(50) NOT NULL,
+    PRIMARY KEY (fk_id_usuario),
+    CONSTRAINT uk_administrador_credenciamento UNIQUE (credenciamento),
+    CONSTRAINT fk_administrador_usuario FOREIGN KEY (fk_id_usuario)
+    REFERENCES usuario (id_usuario) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- COMUNIDADE e POSTAGEM
+-- ---------------------------------------------------------------------
+CREATE TABLE comunidade (
+    id_comunidade INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    tipo ENUM('ciencias_naturais','humanas','saude','exatas','estudo_trabalho','geral','noticias','psicologos','sessoes') NOT NULL,
+    PRIMARY KEY (id_comunidade),
+    CONSTRAINT uk_comunidade_tipo UNIQUE (tipo)
+) ENGINE=InnoDB;
+
+CREATE TABLE postagem (
+    id_postagem INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    texto VARCHAR(1000) NOT NULL,
+    tipo VARCHAR(45) NOT NULL DEFAULT 'texto',
+    url_externa VARCHAR(255) NULL,
+    data_criacao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fk_id_usuario INT UNSIGNED NOT NULL,
+    fk_id_comunidade INT UNSIGNED NOT NULL,
+    PRIMARY KEY (id_postagem),
+    CONSTRAINT uk_postagem UNIQUE (fk_id_usuario, fk_id_comunidade, data_criacao),
+    CONSTRAINT ck_postagem_texto CHECK (CHAR_LENGTH(TRIM(texto)) > 0), 
+    CONSTRAINT fk_postagem_usuario FOREIGN KEY (fk_id_usuario)
+    REFERENCES usuario (id_usuario) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_postagem_comunidade FOREIGN KEY (fk_id_comunidade)
+    REFERENCES comunidade (id_comunidade) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_postagem_comunidade_data ON postagem (fk_id_comunidade, data_criacao);
+
+-- ---------------------------------------------------------------------
+-- SESSAO (oferecida por psicologo) e inscricoes
+-- ---------------------------------------------------------------------
+CREATE TABLE sessao (
+    id_sessao INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    titulo VARCHAR(150) NOT NULL,
+    data_hora DATETIME NOT NULL,
+    link_acesso VARCHAR(255) NOT NULL,
+    limite_vagas INT UNSIGNED NOT NULL,
+    fk_id_psicologo INT UNSIGNED NOT NULL,
+    PRIMARY KEY (id_sessao),
+    CONSTRAINT uk_sessao_psicologo_horario UNIQUE (fk_id_psicologo, data_hora),
+    CONSTRAINT ck_sessao_vagas CHECK (limite_vagas > 0),
+    CONSTRAINT fk_sessao_psicologo FOREIGN KEY (fk_id_psicologo)
+    REFERENCES psicologo (fk_id_usuario) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_sessao_data_hora ON sessao (data_hora); 
+
+CREATE TABLE participa_sessao (
+    fk_id_sessao INT UNSIGNED NOT NULL,
+    fk_id_vestibulando INT UNSIGNED NOT NULL,
+    data_inscricao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (fk_id_sessao, fk_id_vestibulando), 
+    CONSTRAINT fk_ps_sessao FOREIGN KEY (fk_id_sessao)
+    REFERENCES sessao (id_sessao) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_ps_vestibulando FOREIGN KEY (fk_id_vestibulando)
+    REFERENCES vestibulando (fk_id_usuario) ON DELETE CASCADE ON UPDATE CASCADE
+    ) ENGINE=InnoDB;
+
+CREATE INDEX idx_ps_vestibulando ON participa_sessao (fk_id_vestibulando); 
+
+-- ---------------------------------------------------------------------
+-- PARTICIPA_COMUNIDADE 
+-- --------------------------------------------------------------------
+
+CREATE TABLE participa_comunidade (
+    fk_id_usuario INT UNSIGNED NOT NULL,
+    fk_id_comunidade INT UNSIGNED NOT NULL,
+    data_entrada DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (fk_id_usuario, fk_id_comunidade),
+    CONSTRAINT fk_pc_usuario FOREIGN KEY (fk_id_usuario)
+    REFERENCES usuario (id_usuario) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_pc_comunidade FOREIGN KEY (fk_id_comunidade)
+    REFERENCES comunidade (id_comunidade) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_pc_comunidade ON participa_comunidade (fk_id_comunidade);
+
+-- ---------------------------------------------------------------------
+-- TABELAS DO VESTIBULANDO (autocuidado, calendario, rotina)
+-- ---------------------------------------------------------------------
+CREATE TABLE checklist (
+    id_checklist INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    item_descricao VARCHAR(150) NOT NULL,
+    item_realizado TINYINT(1) NOT NULL DEFAULT 0,
+    data DATE NOT NULL,
+    fk_id_vestibulando INT UNSIGNED NOT NULL,
+    PRIMARY KEY (id_checklist),
+    CONSTRAINT uk_checklist UNIQUE (fk_id_vestibulando, data, item_descricao),
+    CONSTRAINT ck_checklist_realizado CHECK (item_realizado IN (0,1)),
+    CONSTRAINT fk_checklist_vestibulando FOREIGN KEY (fk_id_vestibulando)
+    REFERENCES vestibulando (fk_id_usuario) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE desafio (
+    id_desafio INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    descricao VARCHAR(200) NOT NULL,
+    data DATE NOT NULL,
+    concluido TINYINT(1) NOT NULL DEFAULT 0,
+    fk_id_vestibulando INT UNSIGNED NOT NULL,
+    PRIMARY KEY (id_desafio),
+    CONSTRAINT uk_desafio UNIQUE (fk_id_vestibulando, data), -- UC07 FE01
+    CONSTRAINT ck_desafio_concluido CHECK (concluido IN (0,1)),
+    CONSTRAINT fk_desafio_vestibulando FOREIGN KEY (fk_id_vestibulando)
+    REFERENCES vestibulando (fk_id_usuario) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE tarefa_calendario (
+    id_tarefa INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    descricao VARCHAR(200) NOT NULL,
+    data DATE NOT NULL,
+    fk_id_vestibulando INT UNSIGNED NOT NULL,
+    PRIMARY KEY (id_tarefa),
+    CONSTRAINT uk_tarefa UNIQUE (fk_id_vestibulando, data, descricao),
+    CONSTRAINT fk_tarefa_vestibulando FOREIGN KEY (fk_id_vestibulando)
+    REFERENCES vestibulando (fk_id_usuario) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE atividade_rotina (
+    id_atividade INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    hora_inicio TIME NOT NULL,
+    hora_fim TIME NOT NULL,
+    descricao VARCHAR(255) NOT NULL,
+    fk_id_vestibulando INT UNSIGNED NOT NULL,
+    PRIMARY KEY (id_atividade),
+    CONSTRAINT uk_atividade UNIQUE (fk_id_vestibulando, hora_inicio), -- UC06 FE01
+    CONSTRAINT ck_atividade_horas CHECK (hora_fim > hora_inicio),
+    CONSTRAINT fk_atividade_vestibulando FOREIGN KEY (fk_id_vestibulando)
+    REFERENCES vestibulando (fk_id_usuario) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- ---------------------------------------------------------------------
+-- GATILHOS (regras de negocio que CHECK/FK nao expressam)
+-- ---------------------------------------------------------------------
+DELIMITER $$
+-- Apenas psicologos validados criam sessoes
+CREATE TRIGGER trg_sessao_psicologo_validado
+BEFORE INSERT ON sessao
+FOR EACH ROW
+BEGIN
+    IF (SELECT status_validacao FROM psicologo
+        WHERE fk_id_usuario = NEW.fk_id_psicologo) <> 'validado' THEN
+    SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'RN02: apenas psicologos com CRP validado podem criar sessoes';
+    END IF;
+END$$
+
+-- Inscricao nao pode exceder o limite de vagas
+CREATE TRIGGER trg_participa_sessao_vagas
+BEFORE INSERT ON participa_sessao
+FOR EACH ROW
+BEGIN
+    DECLARE v_limite INT UNSIGNED;
+    DECLARE v_inscritos INT UNSIGNED;
+    SELECT limite_vagas INTO v_limite
+        FROM sessao WHERE id_sessao = NEW.fk_id_sessao FOR UPDATE;
+    SELECT COUNT(*) INTO v_inscritos
+        FROM participa_sessao WHERE fk_id_sessao = NEW.fk_id_sessao;
+    IF v_inscritos >= v_limite THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Vagas esgotadas';
+    END IF;
+END$$
+
+-- Coerencia da generalizacao: a subclasse deve corresponder a tipo_perfil
+CREATE TRIGGER trg_vestibulando_tipo BEFORE INSERT ON vestibulando
+FOR EACH ROW
+BEGIN
+    IF (SELECT tipo_perfil FROM usuario WHERE id_usuario = NEW.fk_id_usuario) <> 'vestibulando' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'usuario nao e do tipo vestibulando';
+    END IF;
+END$$
+
+CREATE TRIGGER trg_psicologo_tipo BEFORE INSERT ON psicologo
+FOR EACH ROW
+BEGIN
+    IF (SELECT tipo_perfil FROM usuario WHERE id_usuario = NEW.fk_id_usuario) <> 'psicologo' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'usuario nao e do tipo psicologo';
+    END IF;
+END$$
+
+CREATE TRIGGER trg_administrador_tipo BEFORE INSERT ON administrador
+FOR EACH ROW
+BEGIN
+    IF (SELECT tipo_perfil FROM usuario WHERE id_usuario = NEW.fk_id_usuario) <> 'administrador' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'usuario nao e do tipo administrador';
+    END IF;
+END$$
+
+-- ---------------------------------------------------------------------
+-- VISAO de apoio a sessoes abertas com vagas restantes
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE VIEW vw_sessoes_abertas AS
+SELECT s.id_sessao, s.titulo, s.data_hora, s.limite_vagas,
+    s.limite_vagas - COUNT(ps.fk_id_vestibulando) AS vagas_restantes,
+    u.nome AS psicologo
+    FROM sessao s
+    JOIN usuario u ON u.id_usuario = s.fk_id_psicologo
+    LEFT JOIN participa_sessao ps ON ps.fk_id_sessao = s.id_sessao
+WHERE s.data_hora > NOW()
+GROUP BY s.id_sessao, s.titulo, s.data_hora, s.limite_vagas, u.nome;
+
+-- ---------------------------------------------------------------------
+--  USUARIO DE APLICACAO (privilegio minimo)
+-- ---------------------------------------------------------------------
+CREATE USER IF NOT EXISTS 'recarregavest_app'@'localhost' IDENTIFIED BY 'Troque_Esta_Senha_123!';
+GRANT SELECT, INSERT, UPDATE, DELETE ON recarregavest_db.* TO 'recarregavest_app'@'localhost';
