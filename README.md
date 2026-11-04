@@ -33,6 +33,12 @@ Desenvolvido no âmbito da disciplina de **Projeto Integrador II**, na Universid
 
 O RecarregaVest oferece recursos de organização, informação e acolhimento emocional. A plataforma não realiza atendimento clínico individual, diagnósticos ou tratamentos psicológicos.
 
+## Resultados dos Testes de Carga
+
+Acesse a página com os resultados da primeira medição dos testes de carga da Fase E do projeto:
+
+[**Visualizar relatório — 1ª Medição dos Testes de Carga**](https://mariaf-ribeiro.github.io/RecarregaVest-PI2/resultados/)
+
 ---
 
 
