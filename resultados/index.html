@@ -1,0 +1,455 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RecarregaVest | Testes de Carga</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --ink: #202b45;
+      --muted: #69758b;
+      --blue: #5368d5;
+      --purple: #8b68c9;
+      --green: #21875b;
+      --line: #e6eaf2;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.6;
+    }
+
+    header {
+      background: linear-gradient(125deg, #202c54, #5368d5);
+      color: white;
+      padding: 58px 24px;
+    }
+
+    .header-content, main, footer {
+      max-width: 1100px;
+      margin: auto;
+    }
+
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-size: 12px;
+      font-weight: 700;
+      opacity: .8;
+    }
+
+    h1 {
+      font-size: clamp(30px, 5vw, 46px);
+      line-height: 1.15;
+      margin: 14px 0;
+    }
+
+    header p { color: #e1e7ff; max-width: 680px; }
+
+    main { padding: 34px 22px 60px; }
+
+    section { margin-bottom: 38px; }
+
+    h2 { font-size: 23px; margin-bottom: 8px; }
+
+    .intro, .muted { color: var(--muted); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 22px;
+      box-shadow: 0 3px 12px rgba(30, 45, 80, .035);
+    }
+
+    .metric-label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .metric {
+      font-size: 29px;
+      font-weight: 750;
+      margin-top: 7px;
+    }
+
+    .metric-note { font-size: 12px; color: var(--muted); }
+
+    .service-title { font-size: 18px; font-weight: 700; }
+
+    .tag {
+      display: inline-block;
+      border-radius: 30px;
+      background: #e8f6ef;
+      color: var(--green);
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .chart-row {
+      display: grid;
+      grid-template-columns: 150px 1fr 80px;
+      gap: 12px;
+      align-items: center;
+      margin: 17px 0;
+      font-size: 14px;
+    }
+
+    .track {
+      height: 13px;
+      border-radius: 20px;
+      background: #edf0f6;
+      overflow: hidden;
+    }
+
+    .bar {
+      height: 100%;
+      border-radius: 20px;
+    }
+
+    .blue { background: var(--blue); }
+    .purple { background: var(--purple); }
+
+    .value { text-align: right; font-weight: 700; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      font-size: 14px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 13px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    th { color: var(--muted); font-weight: 600; }
+
+    .pass { color: var(--green); font-weight: 700; }
+
+    .note {
+      background: #eef1ff;
+      border-left: 4px solid var(--blue);
+      padding: 17px 20px;
+      border-radius: 8px;
+      margin-top: 16px;
+    }
+
+    .warning {
+      background: #fff6e8;
+      border-left: 4px solid #d99a35;
+      padding: 17px 20px;
+      border-radius: 8px;
+      margin-top: 16px;
+    }
+
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .links li { margin: 9px 0; }
+
+    footer {
+      padding: 25px 22px 40px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 600px) {
+      .chart-row { grid-template-columns: 105px 1fr 65px; gap: 7px; }
+      table { font-size: 12px; }
+      th, td { padding: 9px 6px; }
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="header-content">
+    <div class="eyebrow">Projeto RecarregaVest · PI2</div>
+    <h1>1ª Medição dos<br>Testes de Carga</h1>
+    <p>
+      Avaliação de desempenho das operações de consulta de postagens
+      e escrita de itens de checklist, utilizando k6 e bancos de dados
+      MongoDB e MySQL no ambiente local.
+    </p>
+    <p><strong>Data da medição:</strong> 04 de novembro de 2026</p>
+  </div>
+</header>
+
+<main>
+
+  <section>
+    <h2>Visão geral</h2>
+    <p class="intro">
+      Foram realizados testes de carga em duas operações da API
+      experimental do RecarregaVest, avaliando latência, vazão,
+      taxa de falhas e comportamento com até 20 usuários virtuais.
+    </p>
+
+    <div class="grid">
+      <div class="card">
+        <div class="metric-label">Requisições de consulta</div>
+        <div class="metric">2.695</div>
+        <div class="metric-note">Postagens da comunidade</div>
+      </div>
+      <div class="card">
+        <div class="metric-label">Requisições de escrita</div>
+        <div class="metric">2.682</div>
+        <div class="metric-note">Itens de checklist</div>
+      </div>
+      <div class="card">
+        <div class="metric-label">Falhas na execução final</div>
+        <div class="metric">0%</div>
+        <div class="metric-note">Nas duas operações</div>
+      </div>
+      <div class="card">
+        <div class="metric-label">Concorrência máxima testada</div>
+        <div class="metric">20 VUs</div>
+        <div class="metric-note">Usuários virtuais simultâneos</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Serviços avaliados</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="service-title">Consulta de postagens</div>
+        <p class="muted">
+          Operação HTTP GET para consultar as postagens de uma
+          comunidade armazenadas no MongoDB.
+        </p>
+        <span class="tag">Leitura</span>
+      </div>
+      <div class="card">
+        <div class="service-title">Escrita no checklist</div>
+        <p class="muted">
+          Operação HTTP POST para adicionar itens ao checklist
+          de um vestibulando no MongoDB.
+        </p>
+        <span class="tag">Escrita</span>
+      </div>
+    </div>
+    <div class="note">
+      A API foi implementada como um componente experimental para
+      viabilizar a medição das operações. Ela se conecta ao MySQL
+      e ao MongoDB, mas as duas rotas efetivamente avaliadas nesta
+      etapa realizam operações no MongoDB.
+    </div>
+  </section>
+
+  <section>
+    <h2>Comparação de desempenho</h2>
+    <p class="intro">Latência média das requisições, em milissegundos.</p>
+    <div class="card">
+      <div class="chart-row">
+        <span>Consulta</span>
+        <div class="track"><div class="bar blue" style="width:53.3%"></div></div>
+        <span class="value">4,69 ms</span>
+      </div>
+      <div class="chart-row">
+        <span>Escrita</span>
+        <div class="track"><div class="bar purple" style="width:100%"></div></div>
+        <span class="value">8,80 ms</span>
+      </div>
+      <p class="metric-note">Escala proporcional à maior latência média.</p>
+    </div>
+
+    <p class="intro" style="margin-top:22px">Percentil 95 (p95), em milissegundos.</p>
+    <div class="card">
+      <div class="chart-row">
+        <span>Consulta</span>
+        <div class="track"><div class="bar blue" style="width:41.4%"></div></div>
+        <span class="value">5,65 ms</span>
+      </div>
+      <div class="chart-row">
+        <span>Escrita</span>
+        <div class="track"><div class="bar purple" style="width:100%"></div></div>
+        <span class="value">13,65 ms</span>
+      </div>
+      <p class="metric-note">Escala proporcional à maior latência p95.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Resultados detalhados</h2>
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>Métrica</th>
+            <th>Consulta</th>
+            <th>Escrita</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Requisições</td><td>2.695</td><td>2.682</td></tr>
+          <tr><td>Latência média</td><td>4,69 ms</td><td>8,80 ms</td></tr>
+          <tr><td>Mediana</td><td>4,76 ms</td><td>8,13 ms</td></tr>
+          <tr><td>Latência p90</td><td>5,47 ms</td><td>9,97 ms</td></tr>
+          <tr><td>Latência p95</td><td>5,65 ms</td><td>13,65 ms</td></tr>
+          <tr><td>Latência máxima</td><td>19,33 ms</td><td>34,86 ms</td></tr>
+          <tr><td>Vazão</td><td>12,81 req/s</td><td>12,75 req/s</td></tr>
+          <tr><td>Taxa de falhas</td><td class="pass">0%</td><td class="pass">0%</td></tr>
+          <tr><td>Usuários virtuais máximos</td><td>20</td><td>20</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Avaliação dos SLAs</h2>
+    <p class="intro">
+      Foram definidos dois critérios para avaliar o comportamento
+      das operações durante os testes.
+    </p>
+    <div class="card">
+      <table>
+        <thead>
+          <tr><th>Critério</th><th>Limite definido</th><th>Consulta</th><th>Escrita</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Taxa de falhas</td><td>Menor que 1%</td>
+            <td class="pass">Aprovado</td><td class="pass">Aprovado</td>
+          </tr>
+          <tr>
+            <td>Latência p95</td><td>Menor que 1.000 ms</td>
+            <td class="pass">Aprovado</td><td class="pass">Aprovado</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Metodologia dos testes</h2>
+    <div class="card">
+      <p><strong>Ferramenta:</strong> Grafana k6 versão 2.3.0.</p>
+      <p><strong>Duração:</strong> aproximadamente 3 minutos e 30 segundos por teste.</p>
+      <p><strong>Usuários virtuais:</strong> aumento gradual de 0 até 10 VUs, depois até 20 VUs e redução até 0.</p>
+      <p><strong>Estágios:</strong> 30 segundos para atingir 10 VUs; 1 minuto mantendo 10; 30 segundos para atingir 20; 1 minuto mantendo 20; e 30 segundos para redução.</p>
+      <p><strong>Intervalo:</strong> pausa de 1 segundo entre as iterações de cada usuário virtual.</p>
+      <p><strong>Critérios automatizados:</strong> verificação de HTTP 200, conteúdo esperado e limites de latência e falhas.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Ambiente de execução</h2>
+    <div class="card">
+      <p><strong>Máquina:</strong> MacBook Air com chip Apple M1.</p>
+      <p><strong>Sistema operacional:</strong> macOS 15.2.</p>
+      <p><strong>Processador:</strong> 8 núcleos de CPU.</p>
+      <p><strong>Memória RAM física:</strong> 8 GB.</p>
+      <p><strong>Docker Desktop:</strong> 4.98.0.</p>
+      <p><strong>Docker Engine:</strong> 29.9.2.</p>
+      <p><strong>Ambiente Docker:</strong> Linux ARM64, 8 CPUs e aproximadamente 3,825 GiB de memória disponíveis para a VM.</p>
+      <p><strong>MySQL:</strong> versão 8.0.</p>
+      <p><strong>MongoDB:</strong> versão 7.0.</p>
+      <p><strong>Node.js:</strong> versão 26.13.0.</p>
+      <p><strong>API:</strong> Express, executada localmente na porta 3000.</p>
+      <p><strong>Containers:</strong> sem limites individuais de CPU e memória configurados; recursos compartilhados pela VM do Docker Desktop.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Análise de concorrência e gargalos</h2>
+    <div class="card">
+      <p>
+        Nos cenários avaliados, as duas operações suportaram até
+        20 usuários virtuais simultâneos, sem falhas na execução final.
+        A latência permaneceu abaixo dos limites definidos.
+      </p>
+      <p>
+        A operação de escrita apresentou latência superior à consulta,
+        comportamento esperado por envolver alteração de documentos
+        no banco de dados.
+      </p>
+      <p>
+        A vazão das duas operações ficou próxima de 12,8 requisições
+        por segundo. Esse resultado também é influenciado pela pausa
+        de um segundo configurada em cada iteração do teste.
+      </p>
+      <div class="warning">
+        <strong>Limitação identificada:</strong> o limite máximo de
+        concorrência não foi determinado. Como o maior cenário
+        executado utilizou 20 VUs sem falhas, não é possível afirmar
+        que esse seja o limite do sistema.
+      </div>
+      <p>
+        Como hipótese para testes futuros, recomenda-se investigar
+        o comportamento do pool de conexões, o tempo de resposta
+        do MongoDB, o consumo de CPU e memória e a evolução da
+        latência em cenários com mais usuários simultâneos.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Ocorrência durante os testes</h2>
+    <div class="card">
+      <p>
+        Na primeira repetição do teste de escrita, foram identificadas
+        falhas associadas ao erro MongoDB E11000, relacionado ao índice
+        único do checklist.
+      </p>
+      <p>
+        A causa estava associada à operação de atualização com
+        <code>upsert</code> e ao filtro que verificava a existência
+        de itens. Sob concorrência, requisições podiam tentar criar
+        documentos com a mesma combinação de usuário e data.
+      </p>
+      <p>
+        A implementação foi corrigida para garantir a existência
+        do documento antes da inclusão do item e utilizar
+        <code>$addToSet</code> para evitar duplicações.
+      </p>
+      <p>
+        Após a correção, a execução final registrou 2.682 requisições,
+        sem falhas, e 100% dos checks aprovados.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Arquivos e implementação</h2>
+    <div class="card">
+      <ul class="links">
+        <li><a href="../backend/index.js">Implementação da API experimental</a></li>
+        <li><a href="../tests/consulta-postagens.js">Script k6 — consulta de postagens</a></li>
+        <li><a href="../tests/escrita-checklist.js">Script k6 — escrita no checklist</a></li>
+        <li><a href="consulta-postagens.json">Resultados JSON — consulta</a></li>
+        <li><a href="escrita-checklist.json">Resultados JSON — escrita final</a></li>
+        <li><a href="escrita-checklist-falha-concorrencia.json">Resultados JSON — escrita com falhas anteriores</a></li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  RecarregaVest · Projeto Integrador II · Fase E — 1ª Medição dos Testes de Carga
+  <br>
+  Medições realizadas em ambiente local em 04/11/2026.
+</footer>
+</body>
+</html>
