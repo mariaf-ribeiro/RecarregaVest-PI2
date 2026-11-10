@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meu perfil - RecarregaVest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/app.js"></script>
+</head>
+<body>
+  <!-- Telas do Figma: "Meu perfil estudante" e "Meu perfil psicologo" -->
+  <nav id="menu" data-ativo="perfil"></nav>
+  <main class="container">
+    <a class="voltar" id="voltar" href="inicio.html">↩ Voltar para Página inicial</a>
+    <div class="perfil">
+      <div class="foto">
+        <div id="avatar"></div>
+        <button class="lapis" id="editar" aria-label="Editar perfil">✎</button>
+      </div>
+      <h2 class="centro" style="font-weight:400" id="titulo"></h2>
+
+      <h3 style="color:var(--texto);font-size:1rem">Dados Pessoais</h3>
+      <dl id="dados"></dl>
+
+      <form id="form" class="cartao oculto mt">
+        <h3>Editar perfil</h3>
+        <div class="avatares" id="avatares" style="justify-content:flex-start;margin-bottom:12px"></div>
+        <div class="campo"><label for="nome">Nome completo</label><input id="nome" maxlength="150" required></div>
+        <div class="campo" id="campo-curso"><label for="curso">Curso pretendido</label><input id="curso" maxlength="100"></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button type="button" class="btn btn-contorno" id="cancelar">Cancelar</button>
+          <button type="submit" class="btn">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    const sessao = protegerPagina();
+    let usuario = sessao;
+    let avatarEscolhido = null;
+
+    // Psicólogo e admin não usam o menu do estudante
+    if (sessao && sessao.tipo_perfil !== "vestibulando") {
+      document.getElementById("menu").remove();
+      document.getElementById("voltar").href = paginaInicial(sessao.tipo_perfil);
+    }
+
+    function desenhar() {
+      const rotulos = { vestibulando: "Estudante", psicologo: "Psicólogo(a)", administrador: "Administrador(a)" };
+      document.getElementById("avatar").innerHTML = avatarSVG(usuario.foto_perfil, 150);
+      document.getElementById("titulo").textContent = `${usuario.nome.split(" ")[0]} (${rotulos[usuario.tipo_perfil]})`;
+      const linhas = [
+        ["Usuário", "@" + usuario.email.split("@")[0]],
+        ["Nome", usuario.nome],
+        ["E-mail", usuario.email]
+      ];
+      if (usuario.tipo_perfil === "vestibulando") linhas.push(["Curso pretendido", usuario.curso_pretendido || "—"]);
+      if (usuario.tipo_perfil === "psicologo") {
+        linhas.push(["CRP", usuario.crp]);
+        linhas.push(["Status do CRP", `<span class="selo selo-${usuario.status_validacao}">${usuario.status_validacao}</span>`]);
+      }
+      document.getElementById("dados").innerHTML = linhas
+        .map(([k, v]) => `<dt>${k}:</dt><dd>${k === "Status do CRP" ? v : escapar(v)}</dd>`)
+        .join("");
+    }
+
+    function desenharAvatares() {
+      document.getElementById("avatares").innerHTML = [1, 2, 3, 4, 5, 6]
+        .map((n) => `<button type="button" data-a="avatar-${n}" class="${avatarEscolhido === "avatar-" + n ? "ativo" : ""}">${avatarSVG("avatar-" + n, 44)}</button>`)
+        .join("");
+      document.querySelectorAll("#avatares button").forEach((b) => (b.onclick = () => { avatarEscolhido = b.dataset.a; desenharAvatares(); }));
+    }
+
+    const form = document.getElementById("form");
+    document.getElementById("editar").onclick = () => {
+      avatarEscolhido = usuario.foto_perfil || "avatar-1";
+      document.getElementById("nome").value = usuario.nome;
+      document.getElementById("curso").value = usuario.curso_pretendido || "";
+      document.getElementById("campo-curso").classList.toggle("oculto", usuario.tipo_perfil !== "vestibulando");
+      desenharAvatares();
+      form.classList.remove("oculto");
+    };
+    document.getElementById("cancelar").onclick = () => form.classList.add("oculto");
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      try {
+        usuario = await api("PUT", "/api/me", {
+          nome: document.getElementById("nome").value,
+          foto_perfil: avatarEscolhido,
+          curso_pretendido: document.getElementById("curso").value
+        });
+        RV.atualizarUsuario(usuario);
+        form.classList.add("oculto");
+        desenhar();
+        avisar("Perfil atualizado!");
+      } catch (err) {
+        avisar(err.message, true);
+      }
+    };
+
+    if (sessao) {
+      desenhar();
+      api("GET", "/api/me").then((u) => { usuario = u; RV.atualizarUsuario(u); desenhar(); });
+    }
+  </script>
+</body>
+</html>

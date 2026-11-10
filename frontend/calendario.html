@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calendário - RecarregaVest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/app.js"></script>
+</head>
+<body>
+  <!-- Telas do Figma: "Calendario" e "Calendario adicionar" (tabela tarefa_calendario no MySQL) -->
+  <nav id="menu" data-ativo="calendario"></nav>
+  <main class="container">
+    <div class="cal-topo">
+      <button id="anterior" aria-label="Mês anterior">‹</button>
+      <h1 id="mes" style="margin:0;text-transform:capitalize;min-width:220px;text-align:center"></h1>
+      <button id="proximo" aria-label="Próximo mês">›</button>
+    </div>
+    <div class="calendario" id="calendario"></div>
+
+    <div class="centro mt" id="abrir-wrap">
+      <button class="btn" id="abrir">Adicionar Tarefa</button>
+    </div>
+    <form class="barra-adicionar oculto" id="form">
+      <input id="descricao" maxlength="200" placeholder="Descrição" required>
+      <input id="data" type="date" required style="flex:0 1 170px">
+      <button class="btn btn-laranja" type="submit">Adicionar tarefa</button>
+    </form>
+    <p class="centro texto-suave">Dica: clique em um dia para adicionar uma tarefa nele.</p>
+  </main>
+
+  <script>
+    protegerPagina("vestibulando");
+    const hoje = new Date();
+    let ano = hoje.getFullYear();
+    let mes = hoje.getMonth(); // 0 a 11
+
+    async function desenhar() {
+      const chave = `${ano}-${String(mes + 1).padStart(2, "0")}`;
+      document.getElementById("mes").textContent = `${MESES[mes]} ${ano}`;
+      let tarefas = [];
+      try {
+        tarefas = await api("GET", "/api/tarefas?mes=" + chave);
+      } catch (err) {
+        avisar(err.message, true);
+      }
+
+      const dias = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+      let html = dias.map((d) => `<div class="dia-semana">${d}</div>`).join("");
+      const primeiroDia = new Date(ano, mes, 1).getDay();
+      const totalDias = new Date(ano, mes + 1, 0).getDate();
+      for (let i = 0; i < primeiroDia; i++) html += `<div class="dia vazio"></div>`;
+      for (let dia = 1; dia <= totalDias; dia++) {
+        const data = `${chave}-${String(dia).padStart(2, "0")}`;
+        const doDia = tarefas.filter((t) => t.data === data);
+        const classes = ["dia"];
+        if (new Date(ano, mes, dia).getDay() === 0) classes.push("domingo");
+        if (data === hojeISO()) classes.push("hoje");
+        html += `<div class="${classes.join(" ")}" data-data="${data}">
+          <div class="numero">${dia}</div>
+          ${doDia.map((t) => `<div class="tarefa-chip" title="${escapar(t.descricao)}"><span>${escapar(t.descricao)}</span>
+            <button data-id="${t.id_tarefa}" aria-label="Remover tarefa">×</button></div>`).join("")}
+        </div>`;
+      }
+      const grade = document.getElementById("calendario");
+      grade.innerHTML = html;
+
+      grade.querySelectorAll(".dia[data-data]").forEach((celula) => {
+        celula.onclick = () => abrirFormulario(celula.dataset.data);
+      });
+      grade.querySelectorAll(".tarefa-chip button").forEach((botao) => {
+        botao.onclick = async (e) => {
+          e.stopPropagation();
+          if (!confirm("Remover esta tarefa?")) return;
+          try {
+            await api("DELETE", "/api/tarefas/" + botao.dataset.id);
+            avisar("Tarefa removida.");
+            desenhar();
+          } catch (err) {
+            avisar(err.message, true);
+          }
+        };
+      });
+    }
+
+    function abrirFormulario(data) {
+      document.getElementById("form").classList.remove("oculto");
+      document.getElementById("abrir-wrap").classList.add("oculto");
+      document.getElementById("data").value = data || hojeISO();
+      document.getElementById("descricao").focus();
+    }
+
+    document.getElementById("abrir").onclick = () => abrirFormulario();
+    document.getElementById("anterior").onclick = () => { mes--; if (mes < 0) { mes = 11; ano--; } desenhar(); };
+    document.getElementById("proximo").onclick = () => { mes++; if (mes > 11) { mes = 0; ano++; } desenhar(); };
+
+    document.getElementById("form").onsubmit = async (e) => {
+      e.preventDefault();
+      const data = document.getElementById("data").value;
+      try {
+        await api("POST", "/api/tarefas", { descricao: document.getElementById("descricao").value, data });
+        avisar("Tarefa adicionada!");
+        document.getElementById("descricao").value = "";
+        const [a, m] = data.split("-").map(Number);
+        ano = a;
+        mes = m - 1;
+        desenhar();
+      } catch (err) {
+        avisar(err.message, true);
+      }
+    };
+
+    desenhar();
+  </script>
+</body>
+</html>

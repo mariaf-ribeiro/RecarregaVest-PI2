@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Início - Psicólogo - RecarregaVest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/app.js"></script>
+</head>
+<body>
+  <!-- Tela do Figma: "Bem vindo psicologo" -->
+  <main class="container">
+    <div style="display:flex;justify-content:flex-end;gap:10px">
+      <a class="btn btn-vermelho btn-pequeno" href="perfil.html">Sua conta</a>
+      <button class="btn btn-vermelho btn-pequeno" onclick="confirmarSair()">Sair</button>
+    </div>
+
+    <section class="heroi mt">
+      <div>
+        <h1 id="ola">Bem vindo ao RecarregaVest!</h1>
+        <p class="citacao" style="text-align:left">“Nosso espaço é sobre acolher, orientar e lembrar que ninguém precisa
+          enfrentar a jornada acadêmica sozinho.”</p>
+      </div>
+      <img class="ilustracao" src="img/voluntario.svg" alt="">
+    </section>
+
+    <div id="status" class="aviso oculto"></div>
+
+    <p class="pergunta">Qual seu plano para hoje?</p>
+    <div class="centro">
+      <a class="atalho" href="comunidades.html" style="display:inline-block;padding:18px 48px">
+        <span style="font-size:1.4rem">Comunidade</span><br>
+        <small>Entre e pratique o bem!</small>
+      </a>
+    </div>
+  </main>
+
+  <script>
+    const usuario = protegerPagina("psicologo");
+    if (usuario) {
+      document.getElementById("ola").textContent = `Bem vindo(a), ${usuario.nome.split(" ")[0]}!`;
+      // Atualiza o status do CRP (pode ter sido validado pelo administrador)
+      api("GET", "/api/me").then((u) => {
+        RV.atualizarUsuario(u);
+        const caixa = document.getElementById("status");
+        if (u.status_validacao === "pendente") {
+          caixa.className = "aviso aviso-info";
+          caixa.textContent = "Seu CRP está em análise pela administração. Depois de validado, você poderá criar sessões em grupo.";
+        }
+      });
+    }
+  </script>
+</body>
+</html>

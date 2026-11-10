@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Administração - RecarregaVest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/app.js"></script>
+</head>
+<body>
+  <!-- Tela extra (não está no Figma): Validar CRP - UC14. Login com o e-mail do administrador. -->
+  <header class="topo">
+    <span class="marca">RecarregaVest · Administração</span>
+    <button class="btn btn-vermelho btn-pequeno" onclick="confirmarSair()">Sair</button>
+  </header>
+  <main class="container">
+    <h1>Validação de CRP</h1>
+    <p class="texto-suave">Somente psicólogos com CRP validado podem criar sessões em grupo (regra RN02, garantida por gatilho no MySQL).</p>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Nome</th><th>E-mail</th><th>CRP</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody id="tabela"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    protegerPagina("administrador");
+
+    async function carregar() {
+      try {
+        const psicologos = await api("GET", "/api/admin/psicologos");
+        document.getElementById("tabela").innerHTML = psicologos
+          .map((p) => `
+            <tr>
+              <td>${escapar(p.nome)}</td>
+              <td>${escapar(p.email)}</td>
+              <td>${escapar(p.crp)}</td>
+              <td><span class="selo selo-${p.status_validacao}">${p.status_validacao}</span></td>
+              <td style="white-space:nowrap">
+                <button class="btn btn-pequeno" data-id="${p.id_usuario}" data-s="validado" ${p.status_validacao === "validado" ? "disabled" : ""}>Validar</button>
+                <button class="btn btn-vermelho btn-pequeno" data-id="${p.id_usuario}" data-s="rejeitado" ${p.status_validacao === "rejeitado" ? "disabled" : ""}>Rejeitar</button>
+              </td>
+            </tr>`)
+          .join("");
+        document.querySelectorAll("#tabela button").forEach((b) => {
+          b.onclick = async () => {
+            try {
+              await api("PATCH", "/api/admin/psicologos/" + b.dataset.id, { status: b.dataset.s });
+              avisar("Status atualizado.");
+              carregar();
+            } catch (err) {
+              avisar(err.message, true);
+            }
+          };
+        });
+      } catch (err) {
+        avisar(err.message, true);
+      }
+    }
+    carregar();
+  </script>
+</body>
+</html>

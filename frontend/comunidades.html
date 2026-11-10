@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Comunidades - RecarregaVest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/app.js"></script>
+</head>
+<body>
+  <!-- Telas do Figma: "Comunidade aluno sessao / ciencia natural / noticias / postar"
+       e "Comunidade psicologo / psicologo postar".
+       Postagens -> MongoDB  |  Sessões e inscrições -> MySQL -->
+  <nav id="menu" data-ativo="comunidades"></nav>
+
+  <div class="comunidade">
+    <aside class="lateral" id="lateral"></aside>
+
+    <section class="feed">
+      <!-- Lista (postagens ou sessões) -->
+      <div id="area-lista">
+        <h2 id="titulo-feed"></h2>
+        <div id="lista"></div>
+        <button class="btn btn-salmao btn-flutuante" id="adicionar">ADICIONAR</button>
+      </div>
+
+      <!-- Nova postagem -->
+      <form class="composer oculto" id="form-post">
+        <h2 id="titulo-post">Nova postagem</h2>
+        <textarea id="texto" maxlength="1000" placeholder="Escreva aqui o que você deseja compartilhar..."></textarea>
+        <div class="linha-link">
+          <label class="link-box"><span>Link:</span><input id="link" placeholder="Digite o link aqui..."></label>
+          <button class="btn btn-acesse" type="submit">Postar</button>
+          <button class="btn btn-acesse" type="button" id="cancelar-post">Cancelar</button>
+        </div>
+      </form>
+
+      <!-- Nova sessão (somente psicólogo) -->
+      <form class="cartao oculto" id="form-sessao" style="max-width:560px">
+        <h2>Nova sessão em grupo</h2>
+        <div class="campo"><label for="s-titulo">Título</label><input id="s-titulo" maxlength="150" required placeholder="Ex.: Sessão de dicas e rotinas"></div>
+        <div class="campo"><label for="s-data">Data e hora</label><input id="s-data" type="datetime-local" required></div>
+        <div class="campo"><label for="s-link">Link de acesso (Meet, Zoom...)</label><input id="s-link" maxlength="255" required placeholder="https://meet.google.com/..."></div>
+        <div class="campo"><label for="s-vagas">Limite de vagas</label><input id="s-vagas" type="number" min="1" value="15" required></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button type="button" class="btn btn-contorno" id="cancelar-sessao">Cancelar</button>
+          <button type="submit" class="btn">Criar sessão</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <script>
+    const usuario = protegerPagina("vestibulando", "psicologo");
+    const ehPsi = usuario && usuario.tipo_perfil === "psicologo";
+    if (ehPsi) document.getElementById("menu").remove();
+
+    const comunidades = [
+      ["sessoes", "Sessões"],
+      ...(ehPsi ? [["psicologos", "Psicólogos"]] : []),
+      ["ciencias_naturais", "Ciências Naturais"],
+      ["humanas", "Humanas"],
+      ["saude", "Saúde"],
+      ["exatas", "Exatas"],
+      ["estudo_trabalho", "Estudo-Trabalho"],
+      ["geral", "Geral"],
+      ["noticias", "Notícias"]
+    ];
+    let atual = new URLSearchParams(location.search).get("c") || "sessoes";
+    if (!comunidades.some(([t]) => t === atual)) atual = "sessoes";
+
+    function mostrar(qual) {
+      document.getElementById("area-lista").classList.toggle("oculto", qual !== "lista");
+      document.getElementById("form-post").classList.toggle("oculto", qual !== "post");
+      document.getElementById("form-sessao").classList.toggle("oculto", qual !== "sessao");
+    }
+
+    function montarLateral() {
+      const lateral = document.getElementById("lateral");
+      lateral.innerHTML =
+        comunidades
+          .map(([tipo, nome], i) => `<button class="${tipo === atual ? "ativo" : ""} ${i === 0 ? "destaque" : ""}" data-c="${tipo}">${nome}</button>`)
+          .join("") +
+        (ehPsi ? `<button style="margin-top:auto" onclick="location.href='psicologo.html'">Voltar para tela inicial</button>` : "");
+      lateral.querySelectorAll("[data-c]").forEach((b) => {
+        b.onclick = () => {
+          atual = b.dataset.c;
+          history.replaceState(null, "", "?c=" + atual);
+          montarLateral();
+          carregar();
+        };
+      });
+    }
+
+    function formatarData(iso) {
+      return new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+    }
+
+    async function carregar() {
+      mostrar("lista");
+      const nome = comunidades.find(([t]) => t === atual)[1];
+      document.getElementById("titulo-feed").textContent = nome;
+      const botaoAdd = document.getElementById("adicionar");
+      // Na aba Sessões, só psicólogo cria (sessão); nas demais, todos postam
+      botaoAdd.classList.toggle("oculto", atual === "sessoes" && !ehPsi);
+      const lista = document.getElementById("lista");
+      lista.innerHTML = `<p class="texto-suave">Carregando…</p>`;
+      try {
+        if (atual === "sessoes") await carregarSessoes(lista);
+        else await carregarPostagens(lista);
+      } catch (err) {
+        lista.innerHTML = `<div class="aviso aviso-erro">${escapar(err.message)}</div>`;
+      }
+    }
+
+    async function carregarPostagens(lista) {
+      const { postagens } = await api("GET", `/api/comunidades/${atual}/postagens`);
+      if (!postagens.length) {
+        lista.innerHTML = `<p class="texto-suave">Ainda não há postagens aqui. Que tal ser o primeiro?</p>`;
+        return;
+      }
+      lista.innerHTML = postagens
+        .map((p) => `
+          <article class="post">
+            <div class="linha">
+              <div class="autor">${avatarSVG(p.autor.foto_perfil, 26)} ${escapar(p.autor.nome)}
+                ${p.autor.tipo_perfil === "psicologo" ? '<span class="selo-psi">Psicólogo(a)</span>' : ""}
+                <span class="data">${formatarData(p.dataCriacao)}</span></div>
+              ${p.autorId === usuario.id_usuario ? `<button class="btn btn-contorno btn-pequeno" data-apagar="${p._id}">Apagar</button>` : ""}
+            </div>
+            <p>${escapar(p.texto)}</p>
+            ${p.urlExterna ? `<p><a href="${escapar(p.urlExterna)}" target="_blank" rel="noopener">🔗 ${escapar(p.urlExterna)}</a></p>` : ""}
+          </article>`)
+        .join("");
+      lista.querySelectorAll("[data-apagar]").forEach((b) => {
+        b.onclick = async () => {
+          if (!confirm("Apagar esta postagem?")) return;
+          try {
+            await api("DELETE", "/api/postagens/" + b.dataset.apagar);
+            carregar();
+          } catch (err) {
+            avisar(err.message, true);
+          }
+        };
+      });
+    }
+
+    async function carregarSessoes(lista) {
+      const sessoes = await api("GET", "/api/sessoes");
+      if (!sessoes.length) {
+        lista.innerHTML = `<p class="texto-suave">Nenhuma sessão cadastrada ainda.</p>`;
+        return;
+      }
+      lista.innerHTML = sessoes
+        .map((s) => {
+          let acao = "";
+          if (s.encerrada) acao = `<button class="btn btn-pequeno" disabled>Encerrada</button>`;
+          else if (s.minha || s.inscrito) acao = `<a class="btn btn-acesse btn-pequeno" href="${escapar(s.link_acesso)}" target="_blank" rel="noopener">Acesse</a>`;
+          else if (ehPsi) acao = "";
+          else if (s.vagas_restantes <= 0) acao = `<button class="btn btn-pequeno" disabled>Esgotada</button>`;
+          else acao = `<button class="btn btn-acesse btn-pequeno" data-inscrever="${s.id_sessao}">Inscrever-se</button>`;
+          const cancelar = s.inscrito && !s.encerrada
+            ? `<button class="btn btn-contorno btn-pequeno" data-cancelar="${s.id_sessao}">Cancelar inscrição</button>` : "";
+          return `
+            <article class="post" style="${s.encerrada ? "opacity:.6" : ""}">
+              <div class="linha">
+                <div>
+                  <div class="autor">${escapar(s.psicologo)} ${s.minha ? '<span class="selo-psi">Sua sessão</span>' : ""}</div>
+                  <p><strong>${escapar(s.titulo)}</strong> — ${formatarData(s.data_hora)}</p>
+                  <p class="texto-suave" style="font-size:.88rem">${s.inscritos} inscrito(s) · ${Math.max(s.vagas_restantes, 0)} vaga(s) restante(s)</p>
+                  ${s.inscrito ? '<p><span class="selo selo-validado">Você está inscrito(a)</span></p>' : ""}
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">${acao}${cancelar}</div>
+              </div>
+            </article>`;
+        })
+        .join("");
+
+      lista.querySelectorAll("[data-inscrever]").forEach((b) => {
+        b.onclick = async () => {
+          try {
+            const r = await api("POST", `/api/sessoes/${b.dataset.inscrever}/inscricao`);
+            avisar(r.mensagem);
+          } catch (err) {
+            avisar(err.message, true);
+          }
+          carregar();
+        };
+      });
+      lista.querySelectorAll("[data-cancelar]").forEach((b) => {
+        b.onclick = async () => {
+          try {
+            await api("DELETE", `/api/sessoes/${b.dataset.cancelar}/inscricao`);
+            avisar("Inscrição cancelada.");
+          } catch (err) {
+            avisar(err.message, true);
+          }
+          carregar();
+        };
+      });
+    }
+
+    // Botão ADICIONAR
+    document.getElementById("adicionar").onclick = () => {
+      if (atual === "sessoes") {
+        mostrar("sessao");
+      } else {
+        document.getElementById("titulo-post").textContent = "Nova postagem em " + comunidades.find(([t]) => t === atual)[1];
+        mostrar("post");
+        document.getElementById("texto").focus();
+      }
+    };
+    document.getElementById("cancelar-post").onclick = () => mostrar("lista");
+    document.getElementById("cancelar-sessao").onclick = () => mostrar("lista");
+
+    document.getElementById("form-post").onsubmit = async (e) => {
+      e.preventDefault();
+      try {
+        await api("POST", `/api/comunidades/${atual}/postagens`, {
+          texto: document.getElementById("texto").value,
+          urlExterna: document.getElementById("link").value
+        });
+        e.target.reset();
+        avisar("Postagem publicada!");
+        carregar();
+      } catch (err) {
+        avisar(err.message, true);
+      }
+    };
+
+    document.getElementById("form-sessao").onsubmit = async (e) => {
+      e.preventDefault();
+      try {
+        await api("POST", "/api/sessoes", {
+          titulo: document.getElementById("s-titulo").value,
+          data_hora: document.getElementById("s-data").value,
+          link_acesso: document.getElementById("s-link").value,
+          limite_vagas: Number(document.getElementById("s-vagas").value)
+        });
+        e.target.reset();
+        avisar("Sessão criada!");
+        carregar();
+      } catch (err) {
+        avisar(err.message, true);
+      }
+    };
+
+    if (usuario) {
+      montarLateral();
+      carregar();
+    }
+  </script>
+</body>
+</html>

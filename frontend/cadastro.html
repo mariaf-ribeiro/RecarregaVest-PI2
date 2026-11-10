@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Criar conta - RecarregaVest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/app.js"></script>
+</head>
+<body>
+  <!-- Telas do Figma: "Criar conta aluno" e "Criar conta psicologo" -->
+  <main class="container" style="padding-top:48px">
+    <h2 class="centro" style="font-weight:400">Bem-vindo ao RecarregaVest!</h2>
+    <p class="centro">Crie sua conta:</p>
+
+    <form class="cadastro mt" id="form" novalidate>
+      <div class="centro">
+        <a class="voltar" href="login.html">↩ Voltar para o login</a>
+        <p style="margin:0">Escolha seu avatar:</p>
+        <div class="avatar-grande" id="avatar-grande"></div>
+        <div class="avatares" id="avatares"></div>
+        <div class="alternador mt">
+          <span>Sou</span>
+          <span class="opcoes">
+            <button type="button" data-perfil="estudante" class="ativo">Estudante</button>
+            <button type="button" data-perfil="psicologo">Psicólogo</button>
+          </span>
+        </div>
+      </div>
+
+      <div>
+        <div class="campo oculto" id="campo-crp">
+          <input type="text" id="crp" placeholder="Nº de registro profissional (CRP)">
+        </div>
+        <div class="campo"><input type="text" id="nome" placeholder="Nome Completo" autocomplete="name"></div>
+        <div class="campo" id="campo-curso">
+          <input type="text" id="curso" placeholder="Curso pretendido (opcional)">
+        </div>
+        <div class="campo"><input type="email" id="email" placeholder="Email" autocomplete="email"></div>
+        <div class="campo senha-wrap">
+          <input type="password" id="senha" placeholder="Senha (mínimo 6 caracteres)" autocomplete="new-password">
+          <button type="button" aria-label="Mostrar senha">👁</button>
+        </div>
+        <div class="campo senha-wrap">
+          <input type="password" id="confirmar" placeholder="Confirmar Senha" autocomplete="new-password">
+          <button type="button" aria-label="Mostrar senha">👁</button>
+        </div>
+        <div id="info-psi" class="aviso aviso-info oculto">
+          Seu CRP será conferido pela administração. Até lá você já pode entrar e participar das comunidades.
+        </div>
+        <div id="erro" class="aviso aviso-erro oculto"></div>
+        <button class="btn btn-bloco" type="submit" id="enviar">Criar uma conta</button>
+      </div>
+    </form>
+  </main>
+
+  <script>
+    let perfil = new URLSearchParams(location.search).get("perfil") === "psicologo" ? "psicologo" : "estudante";
+    let avatar = "avatar-1";
+
+    function desenharAvatares() {
+      document.getElementById("avatar-grande").innerHTML = avatarSVG(avatar, 130);
+      document.getElementById("avatares").innerHTML = [1, 2, 3, 4, 5, 6]
+        .map((n) => `<button type="button" data-a="avatar-${n}" class="${avatar === "avatar-" + n ? "ativo" : ""}" aria-label="Avatar ${n}">${avatarSVG("avatar-" + n, 44)}</button>`)
+        .join("");
+      document.querySelectorAll("#avatares button").forEach((b) => (b.onclick = () => { avatar = b.dataset.a; desenharAvatares(); }));
+    }
+
+    function trocarPerfil(novo) {
+      perfil = novo;
+      const psi = novo === "psicologo";
+      document.querySelectorAll(".alternador button").forEach((b) => b.classList.toggle("ativo", b.dataset.perfil === novo));
+      document.getElementById("campo-crp").classList.toggle("oculto", !psi);
+      document.getElementById("campo-curso").classList.toggle("oculto", psi);
+      document.getElementById("info-psi").classList.toggle("oculto", !psi);
+      document.getElementById("enviar").textContent = psi ? "Prosseguir" : "Criar uma conta";
+    }
+
+    document.querySelectorAll(".alternador button").forEach((b) => (b.onclick = () => trocarPerfil(b.dataset.perfil)));
+    trocarPerfil(perfil);
+    desenharAvatares();
+    ligarOlhoSenha();
+
+    document.getElementById("form").onsubmit = async (e) => {
+      e.preventDefault();
+      const erro = document.getElementById("erro");
+      erro.classList.add("oculto");
+      const valor = (id) => document.getElementById(id).value;
+      if (valor("senha") !== valor("confirmar")) {
+        erro.textContent = "As senhas não são iguais.";
+        return erro.classList.remove("oculto");
+      }
+      try {
+        const { token, usuario } = await api("POST", "/api/auth/cadastro", {
+          perfil: perfil === "psicologo" ? "psicologo" : "vestibulando",
+          nome: valor("nome"),
+          email: valor("email"),
+          senha: valor("senha"),
+          crp: valor("crp"),
+          curso_pretendido: valor("curso"),
+          foto_perfil: avatar
+        });
+        RV.salvarLogin(token, usuario);
+        window.location.href = paginaInicial(usuario.tipo_perfil);
+      } catch (err) {
+        erro.textContent = err.message;
+        erro.classList.remove("oculto");
+      }
+    };
+  </script>
+</body>
+</html>

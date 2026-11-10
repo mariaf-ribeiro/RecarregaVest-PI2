@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mini terapias guiadas - RecarregaVest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/app.js"></script>
+</head>
+<body>
+  <!-- Tela do Figma: "Terapia Guiada" (conteúdos externos: podcasts e vídeos) -->
+  <nav id="menu"></nav>
+  <main class="container">
+    <a class="voltar" href="inicio.html">↩ Voltar para Página inicial</a>
+    <section class="terapia">
+      <div class="respirar">
+        <svg width="110" height="110" viewBox="0 0 110 110" aria-hidden="true">
+          <g stroke="#f7931e" stroke-width="4" stroke-linecap="round">
+            <line x1="55" y1="6" x2="55" y2="16"/><line x1="28" y1="16" x2="34" y2="24"/><line x1="82" y1="16" x2="76" y2="24"/>
+          </g>
+          <circle cx="55" cy="36" r="11" fill="#f7931e"/>
+          <path d="M55 48c-10 0-16 8-16 18v6h32v-6c0-10-6-18-16-18z" fill="#f7931e"/>
+          <path d="M18 88c10-12 24-14 37-6 13-8 27-6 37 6-14 6-25 6-37 1-12 5-23 5-37-1z" fill="#f7931e"/>
+        </svg>
+        <h2>Respiração guiada</h2>
+        <div class="bolha" id="bolha">Pronto?</div>
+        <button class="btn btn-laranja" id="respirar">Começar (1 minuto)</button>
+      </div>
+
+      <div class="player">
+        <h3>🎙 Escute podcasts sobre Vestibular, Saúde Mental e Produtividade!</h3>
+        <a href="https://open.spotify.com/search/foco%20e%20concentra%C3%A7%C3%A3o%20estudo/podcasts" target="_blank" rel="noopener">
+          <span class="capa" style="background:#333">🎧</span><span>Melhore seu FOCO e CONCENTRAÇÃO<small>Podcasts de estudo</small></span>
+        </a>
+        <a href="https://open.spotify.com/search/sa%C3%BAde%20mental%20vestibular/podcasts" target="_blank" rel="noopener">
+          <span class="capa" style="background:#c2417a">💗</span><span>Saúde mental no vestibular<small>Psicologia na prática</small></span>
+        </a>
+        <a href="https://open.spotify.com/search/medita%C3%A7%C3%A3o%20guiada/podcasts" target="_blank" rel="noopener">
+          <span class="capa" style="background:#2e9e5b">🧘</span><span>Meditação guiada para iniciantes<small>Relaxamento</small></span>
+        </a>
+        <a href="https://www.youtube.com/results?search_query=respira%C3%A7%C3%A3o+para+ansiedade+antes+da+prova" target="_blank" rel="noopener">
+          <span class="capa" style="background:#ef5a3c">▶</span><span>Respiração para ansiedade antes da prova<small>Vídeos no YouTube</small></span>
+        </a>
+        <a href="https://open.spotify.com/search/enem%20podcast/podcasts" target="_blank" rel="noopener">
+          <span class="capa" style="background:#2a4bb0">📚</span><span>Dicas e estratégias para o ENEM<small>Podcasts sobre vestibular</small></span>
+        </a>
+        <a class="btn btn-spotify" href="https://open.spotify.com/" target="_blank" rel="noopener">Conectar com o Spotify</a>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    protegerPagina("vestibulando");
+    document.getElementById("respirar").onclick = (e) => {
+      const bolha = document.getElementById("bolha");
+      e.target.disabled = true;
+      bolha.classList.add("animando");
+      let t = 0;
+      const passo = setInterval(() => {
+        bolha.textContent = t % 8 < 4 ? "Inspire…" : "Expire…";
+        t++;
+        if (t > 60) {
+          clearInterval(passo);
+          bolha.classList.remove("animando");
+          bolha.textContent = "Muito bem!";
+          e.target.disabled = false;
+        }
+      }, 1000);
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Checklist - RecarregaVest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/app.js"></script>
+</head>
+<body>
+  <!-- Tela do Figma: "Checklist" (dados salvos no MongoDB) -->
+  <nav id="menu" data-ativo="checklist"></nav>
+  <main class="container">
+    <h1 class="titulo-laranja">Checklist</h1>
+    <p class="centro texto-suave" id="data"></p>
+    <div class="progresso"><div id="barra" style="width:0"></div></div>
+
+    <ul class="checklist" id="lista"></ul>
+
+    <form id="novo" style="max-width:560px;margin:24px auto 0;display:flex;gap:10px">
+      <input id="descricao" maxlength="150" placeholder="Adicionar um cuidado seu (ex.: beber 2 litros de água)">
+      <button class="btn btn-laranja" type="submit">Adicionar</button>
+    </form>
+  </main>
+
+  <script>
+    protegerPagina("vestibulando");
+    const d = new Date();
+    document.getElementById("data").textContent = `Hoje, ${d.getDate()} de ${MESES[d.getMonth()]}`;
+
+    async function carregar() {
+      try {
+        const checklist = await api("GET", "/api/checklist");
+        const lista = document.getElementById("lista");
+        lista.innerHTML = checklist.itens
+          .map((item, i) => `
+            <li>
+              <input type="checkbox" id="item-${i}" ${item.realizado ? "checked" : ""}>
+              <label for="item-${i}">${escapar(item.descricao)}</label>
+            </li>`)
+          .join("");
+        checklist.itens.forEach((item, i) => {
+          document.getElementById("item-" + i).onchange = async (e) => {
+            try {
+              await api("PATCH", "/api/checklist/itens", { descricao: item.descricao, realizado: e.target.checked });
+              item.realizado = e.target.checked;
+              atualizarBarra(checklist.itens);
+              if (checklist.itens.every((x) => x.realizado)) avisar("Checklist completo! Você está cuidando muito bem de você 💙");
+            } catch (err) {
+              e.target.checked = !e.target.checked;
+              avisar(err.message, true);
+            }
+          };
+        });
+        atualizarBarra(checklist.itens);
+      } catch (err) {
+        avisar(err.message, true);
+      }
+    }
+
+    function atualizarBarra(itens) {
+      const feitos = itens.filter((x) => x.realizado).length;
+      document.getElementById("barra").style.width = itens.length ? (feitos / itens.length) * 100 + "%" : 0;
+    }
+
+    document.getElementById("novo").onsubmit = async (e) => {
+      e.preventDefault();
+      const campo = document.getElementById("descricao");
+      try {
+        await api("POST", "/api/checklist/itens", { descricao: campo.value });
+        campo.value = "";
+        carregar();
+      } catch (err) {
+        avisar(err.message, true);
+      }
+    };
+
+    carregar();
+  </script>
+</body>
+</html>

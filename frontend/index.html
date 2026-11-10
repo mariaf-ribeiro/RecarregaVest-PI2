@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RecarregaVest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/app.js"></script>
+</head>
+<body>
+  <!-- Tela do Figma: "Pagina antes login" -->
+  <header class="topo">
+    <a class="marca" href="index.html">RecarregaVest</a>
+    <a class="link" href="login.html">Fazer login</a>
+  </header>
+
+  <main class="container">
+    <section class="heroi">
+      <div>
+        <h1>Bem-vindo ao RecarregaVest!</h1>
+        <p>O RecarregaVest é um ambiente pensado para você. Para te ajudar a manter o foco, organizar seus estudos,
+          encontrar motivação e chegar muito longe!</p>
+        <p class="pergunta">Aqui você pode acessar:</p>
+      </div>
+      <img class="ilustracao" src="img/estudantes.svg" alt="">
+    </section>
+
+    <div class="grade-atalhos">
+      <a class="atalho atalho-redondo" href="login.html">Calendário de estudos</a>
+      <a class="atalho atalho-redondo" href="login.html">Desafio de Equilíbrio</a>
+      <a class="atalho atalho-redondo" href="login.html">Sessões com psicólogos e comunidades</a>
+    </div>
+    <p class="centro texto-suave">E muitas outras funcionalidades</p>
+
+    <hr style="border:0;border-top:1px dashed #9aa6c4;margin:40px 0">
+
+    <section class="heroi">
+      <div>
+        <h1>Quero ser voluntário!</h1>
+        <p>Voluntariar como psicólogo no RecarregaVest é importante tanto para nossos estudantes quanto para você!
+          É uma oportunidade única de ajudar!</p>
+      </div>
+      <img class="ilustracao" src="img/voluntario.svg" alt="">
+    </section>
+    <p class="centro mt"><a class="btn btn-laranja" href="cadastro.html?perfil=psicologo">Se voluntariar!</a></p>
+  </main>
+
+  <script>
+    // Se já estiver logado, vai direto para a página inicial do perfil
+    if (RV.token() && RV.usuario()) {
+      document.querySelector(".topo .link").textContent = "Entrar";
+      document.querySelector(".topo .link").href = paginaInicial(RV.usuario().tipo_perfil);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Início - RecarregaVest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/app.js"></script>
+</head>
+<body>
+  <!-- Tela do Figma: "Bem vindo estudante" -->
+  <nav id="menu" data-ativo="inicio"></nav>
+  <main class="container">
+    <section class="heroi">
+      <div>
+        <h1 style="font-weight:400" id="ola">Bem vindo ao RecarregaVest!</h1>
+        <p class="citacao" id="frase"></p>
+        <p class="pergunta">Qual seu plano para hoje?</p>
+      </div>
+      <img class="ilustracao" src="img/estudantes.svg" alt="">
+    </section>
+
+    <div class="grade-atalhos">
+      <a class="atalho" href="checklist.html">Checklist</a>
+      <a class="atalho" href="calendario.html">Calendário</a>
+      <a class="atalho" href="desafio.html">Desafio de equilíbrio</a>
+      <a class="atalho" href="rotina.html">Rotina</a>
+      <a class="atalho" href="terapia.html">Mini Terapias guiadas</a>
+      <a class="atalho" href="comunidades.html">Comunidades</a>
+    </div>
+  </main>
+
+  <script>
+    const usuario = protegerPagina("vestibulando");
+    if (usuario) {
+      document.getElementById("ola").textContent = `Bem vindo(a), ${usuario.nome.split(" ")[0]}!`;
+      const frases = [
+        "“Você não precisa estar no seu melhor todos os dias. Só precisa continuar - mesmo que seja devagar, ainda é caminho.”",
+        "“Descansar também faz parte da preparação.”",
+        "“Um passo de cada vez ainda é avançar.”",
+        "“Seu valor não é medido por uma nota.”"
+      ];
+      document.getElementById("frase").textContent = frases[new Date().getDate() % frases.length];
+    }
+  </script>
+</body>
+</html>
